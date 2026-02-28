@@ -284,11 +284,11 @@ def sentiment_by_category(df: pd.DataFrame) -> go.Figure:
 
     fig.update_layout(
         title=dict(text="Sentiment by Category", font=dict(size=14)),
-        xaxis=dict(title="", tickangle=0, gridcolor=COLORS["border"]),
+        xaxis=dict(title="", tickangle=-45, gridcolor=COLORS["border"]),
         yaxis=dict(title="Count", gridcolor=COLORS["border"]),
-        legend=dict(title="", orientation="h", y=-0.2, x=0.5, xanchor="center"),
-        height=350,
-        margin=dict(b=60),
+        legend=dict(title="", orientation="h", y=-0.3, x=0.5, xanchor="center"),
+        height=380,
+        margin=dict(b=100),
     )
 
     return _apply_template(fig)
