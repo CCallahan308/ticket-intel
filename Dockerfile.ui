@@ -1,0 +1,16 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m nltk.downloader punkt
+
+COPY src /app/src
+COPY models /app/models
+COPY main.py /app/main.py
+COPY tickets.csv /app/tickets.csv
+
+EXPOSE 8501
+
+CMD ["python", "main.py", "ui"]

@@ -1,0 +1,36 @@
+# models
+models/
+*.joblib
+*.pkl
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+.env
+
+# ide
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# os
+.DS_Store
+Thumbs.db
+
+# streamlit
+.streamlit/*
+!.streamlit/config.toml
+
+# data
+tickets.csv
+*.csv
+
+# weights and biases
+wandb/

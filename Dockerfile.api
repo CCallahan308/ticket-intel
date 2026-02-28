@@ -1,0 +1,16 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install dependencies first for layer caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+# Need to download nltk dependencies independently for docker builds
+RUN python -m nltk.downloader punkt
+
+# Copy the rest
+COPY src /app/src
+COPY models /app/models
+COPY main.py /app/main.py
+
+CMD ["python", "main.py", "api"]
