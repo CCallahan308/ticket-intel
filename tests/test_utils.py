@@ -7,6 +7,13 @@ def test_clean_text():
     assert clean_text("Hello WORLD!!!") == "hello world"
     assert clean_text("Contact me at test@example.com") == "contact me at"
     assert clean_text("Call 555-123-4567") == "call"
+    
+def test_clean_text_edge_cases():
+    import numpy as np
+    assert clean_text(None) == ""
+    assert clean_text(np.nan) == ""
+    assert clean_text("   Lots   of   spaces   ") == "lots of spaces"
+    assert clean_text("Remove {product_purchased} token") == "remove token"
 
 
 def test_tokenize():
