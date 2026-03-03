@@ -1,6 +1,6 @@
 <div align="center">
   
-# 🎫 Ticket Intel
+# Ticket Intel
 
 **Advanced NLP System for Support Ticket Intelligence**
 
@@ -11,32 +11,30 @@
 
 *Intelligent Routing • Extractive Summarization • Insight Extraction*
 
-[**Explore the Docs**](https://CCallahan308.github.io/ticket-intel) · [**Report Bug**](https://github.com/CCallahan308/ticket-intel/issues) · [**Request Feature**](https://github.com/CCallahan308/ticket-intel/issues)
-
 </div>
 
 ---
 
-## ⚡ What it Does
+## What it Does
 
 Turn chaotic, unstructured customer support queues into organized, actionable data streams. **Ticket Intel** is a production-ready NLP backend and visualization dashboard that significantly decreases ticket handling time.
 
-- **🔀 Smart Routing** - Classifies tickets into operational categories in milliseconds using an optimized TF-IDF + Naive Bayes pipeline (abstracted for simple Transformer model drop-ins).
-- **✂️ Auto-Summarization** - Distills long, rambling support threads into concise, extractive summaries using TF-IDF word frequency scoring.
-- **🔍 Deep Insights** - Instantly surfaces Named Entities, Keywords, and Customer Sentiment before an agent even opens the ticket.
-- **🔌 Interactive API** - Lightning-fast FastAPI backend bringing the NLP models to life, fully documented with OpenAPI/Swagger.
-- **📊 Analytics Dashboard** - A sleek Streamlit UI for monitoring trends, processing single tickets, or running batch evaluations.
+- **Smart Routing** - Classifies tickets into operational categories in milliseconds using an optimized TF-IDF + Naive Bayes pipeline (abstracted for simple Transformer model drop-ins).
+- **Auto-Summarization** - Distills long, rambling support threads into concise, extractive summaries using TF-IDF word frequency scoring.
+- **Deep Insights** - Instantly surfaces Named Entities, Keywords, and Customer Sentiment before an agent even opens the ticket.
+- **Interactive API** - Lightning-fast FastAPI backend bringing the NLP models to life, fully documented with OpenAPI/Swagger.
+- **Analytics Dashboard** - A sleek Streamlit UI for monitoring trends, processing single tickets, or running batch evaluations.
 
 ---
 
-## 🏗️ Architecture Design
+## Architecture Design
 
 ```mermaid
 graph LR
     A[Raw Support Ticket] --> B{Ticket Intel API}
-    B --> C[🎟️ Router Model]
-    B --> D[✂️ Summarizer]
-    B --> E[🧠 Insight Engine]
+    B --> C[ Router Model]
+    B --> D[ Summarizer]
+    B --> E[ Insight Engine]
     
     C --> F((Structured<br>Output))
     D --> F
@@ -45,7 +43,7 @@ graph LR
     F -.-> G[Dashboard / BI Tools]
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 Ensure you have downloaded the [Kaggle Customer Support Ticket Dataset](https://www.kaggle.com/datasets/waseemalastal/customer-support-ticket-dataset) and saved it as `tickets.csv` in the project root.
 
@@ -78,7 +76,7 @@ pip install -r requirements.txt
   python main.py ui
   ```
 
-### 🐳 Docker Deployment
+###  Docker Deployment
 
 Ticket Intel includes highly optimized, production-ready Dockerfiles.
 
@@ -93,11 +91,6 @@ docker run -p 8501:8501 ticket-intel-ui
 ```
 
 ---
-
-## 📚 Comprehensive Documentation
-
-For detailed guides, architecture deep-dives, and contribution guidelines, visit our **[GitHub Pages Documentation Site](https://CCallahan308.github.io/ticket-intel)**.
-
-## 🛡️ License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
