@@ -1,90 +1,103 @@
-# Ticket Intel
+<div align="center">
+  
+# 🎫 Ticket Intel
 
-NLP system for support ticket routing, summarization, and insight extraction.
+**Advanced NLP System for Support Ticket Intelligence**
 
-![Python](https://img.shields.io/badge/Python-3.9%2B-teal)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-teal)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-teal)
+[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-teal.svg?style=for-the-badge&logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B.svg?style=for-the-badge&logo=streamlit)](https://streamlit.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## What it does
+*Intelligent Routing • Extractive Summarization • Insight Extraction*
 
-- **Routing** - Classifies tickets into categories using TF-IDF + Naive Bayes (Modularized for future Transformer upgrades)
-- **Summarization** - Extractive summaries via sentence scoring
-- **Insights** - Entity extraction, keywords, sentiment detection
-- **API** - FastAPI endpoints with OpenAPI docs
-- **Dashboard** - Streamlit UI with visualizations and batch processing
+[**Explore the Docs**](https://CCallahan308.github.io/ticket-intel) · [**Report Bug**](https://github.com/CCallahan308/ticket-intel/issues) · [**Request Feature**](https://github.com/CCallahan308/ticket-intel/issues)
 
-Built for the [Kaggle Customer Support Dataset](https://www.kaggle.com/datasets/waseemalastal/customer-support-ticket-dataset)
+</div>
 
-## Quick Start
+---
 
-### Local Development
+## ⚡ What it Does
+
+Turn chaotic, unstructured customer support queues into organized, actionable data streams. **Ticket Intel** is a production-ready NLP backend and visualization dashboard that significantly decreases ticket handling time.
+
+- **🔀 Smart Routing** - Classifies tickets into operational categories in milliseconds using an optimized TF-IDF + Naive Bayes pipeline (abstracted for simple Transformer model drop-ins).
+- **✂️ Auto-Summarization** - Distills long, rambling support threads into concise, extractive summaries using TF-IDF word frequency scoring.
+- **🔍 Deep Insights** - Instantly surfaces Named Entities, Keywords, and Customer Sentiment before an agent even opens the ticket.
+- **🔌 Interactive API** - Lightning-fast FastAPI backend bringing the NLP models to life, fully documented with OpenAPI/Swagger.
+- **📊 Analytics Dashboard** - A sleek Streamlit UI for monitoring trends, processing single tickets, or running batch evaluations.
+
+---
+
+## 🏗️ Architecture Design
+
+```mermaid
+graph LR
+    A[Raw Support Ticket] --> B{Ticket Intel API}
+    B --> C[🎟️ Router Model]
+    B --> D[✂️ Summarizer]
+    B --> E[🧠 Insight Engine]
+    
+    C --> F((Structured<br>Output))
+    D --> F
+    E --> F
+    
+    F -.-> G[Dashboard / BI Tools]
+```
+
+## 🚀 Quick Start
+
+Ensure you have downloaded the [Kaggle Customer Support Ticket Dataset](https://www.kaggle.com/datasets/waseemalastal/customer-support-ticket-dataset) and saved it as `tickets.csv` in the project root.
+
+### Local Development Environment
 
 ```bash
+# Clone the repository
+git clone https://github.com/CCallahan308/ticket-intel.git
+cd ticket-intel
+
+# Set up and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
+# Install requirements
 pip install -r requirements.txt
 ```
 
-Download the dataset from Kaggle, save as `tickets.csv` in the project folder.
+### Running the Services
 
-**API:**
+- **Start the Insight API** (Interactive docs at `http://localhost:8000/docs`)
+
+  ```bash
+  python main.py api
+  ```
+
+- **Start the Streamlit Dashboard**
+
+  ```bash
+  python main.py ui
+  ```
+
+### 🐳 Docker Deployment
+
+Ticket Intel includes highly optimized, production-ready Dockerfiles.
 
 ```bash
-python main.py api
-# Docs at http://localhost:8000/docs
-```
-
-**Dashboard:**
-
-```bash
-python main.py ui
-```
-
-### Docker Deployment
-
-```bash
-# Build and run API
+# 1. Start the API Container
 docker build -t ticket-intel-api -f Dockerfile.api .
 docker run -p 8000:8000 ticket-intel-api
 
-# Build and run UI
+# 2. Start the Dashboard Container
 docker build -t ticket-intel-ui -f Dockerfile.ui .
 docker run -p 8501:8501 ticket-intel-ui
 ```
 
-## Project Structure
+---
 
-```text
-ticket-intel/
-├── .github/workflows/ # CI/CD pipelines
-├── notebooks/         # Exploratory Data Analysis
-├── src/
-│   ├── api/           # FastAPI application & routers
-│   ├── data/          # Data loading and preprocessing pipelines
-│   ├── models/        # ML models (Router, Summarizer, Insights)
-│   ├── ui/            # Streamlit dashboard and charts
-│   └── utils/         # Shared utilities (NLP ops, etc.)
-├── tests/             # Pytest suite
-├── main.py            # CLI entrypoint
-├── Dockerfile.api     # Production API image
-├── Dockerfile.ui      # Production UI image
-├── requirements.txt
-└── README.md
-```
+## 📚 Comprehensive Documentation
 
-## Testing & Quality Assurance
+For detailed guides, architecture deep-dives, and contribution guidelines, visit our **[GitHub Pages Documentation Site](https://CCallahan308.github.io/ticket-intel)**.
 
-This project uses `pytest` for unit testing and `pre-commit` for code formatting.
+## 🛡️ License
 
-```bash
-# Run tests
-pytest tests/
-
-# Install pre-commit hooks
-pre-commit install
-```
-
-## License
-
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
