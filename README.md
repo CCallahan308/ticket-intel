@@ -11,6 +11,8 @@
 
 *Fast routing • Auto-summarization • Entity extraction*
 
+**[🔴 Live Demo](https://ticket-intel-ccallahan308.streamlit.app/)** — Try the interactive demo
+
 </div>
 
 ---
