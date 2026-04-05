@@ -1,6 +1,8 @@
-[theme]
-base="light"
-primaryColor="#0D9488"
-backgroundColor="#F8FAFB"
-secondaryBackgroundColor="#F1F5F9"
-textColor="#1A1D21"
+{
+  "name": "ticket-intel-demo",
+  "source": "github",
+  "owner": "CCallahan308",
+  "repo": "ticket-intel",
+  "branch": "main",
+  "mainFile": "app.py"
+}
