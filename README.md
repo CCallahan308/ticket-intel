@@ -2,35 +2,54 @@
   
 # Ticket Intel
 
-**Optimized NLP Pipeline for Support Ticket Intelligence**
+**NLP Pipeline for Support Ticket Routing and Summarization**
 
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-teal.svg?style=for-the-badge&logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B.svg?style=for-the-badge&logo=streamlit)](https://streamlit.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-*High-Throughput Routing • Extractive Summarization • Insight Extraction*
+*Fast routing • Auto-summarization • Entity extraction*
 
 </div>
 
 ---
 
-## Architecture and System Design
+## What this does
 
-**Ticket Intel** is designed as a low-latency, high-throughput baseline NLP pipeline. It trades the massive compute overhead of Large Language Models for speed and efficiency, making it ideal for first-pass triage in high-volume customer support queues.
+Routes support tickets to the right team, summarizes long threads, and extracts key entities. Built for speed — 12ms p99 latency per ticket.
 
-- **Routing Engine**: Leverages a TF-IDF vectorizer coupled with a Multinomial Naive Bayes classifier. Engineered for zero cold-start latency and sub-15ms inference time per request.
-- **Auto-Summarization**: Implements extractive summarization using term frequency-inverse document frequency scoring to distill core issues from verbose support threads.
-- **Insight Engine**: Extracts Named Entities (NER) and token-level sentiment to provide structured metadata alongside the raw ticket text.
-- **Asynchronous API**: FastAPI backend providing parallel request processing, capable of handling 500+ requests per second on a single thread.
-- **Visualization**: Streamlit-based UI for batch processing and pipeline evaluation.
+Why not use LLMs? Because in high-volume support queues, you don't need GPT-4 to know that "refund please" goes to the billing team. TF-IDF + Naive Bayes handles 500+ req/sec for pennies.
 
-### Transformer Extensibility
+## Architecture
 
-The routing module is abstracted to allow seamless integration of heavier Transformer models (e.g., BERT, RoBERTa) when compute budget allows.
+| Component | Tech | Purpose |
+|-----------|------|---------|
+| Routing | TF-IDF + MultinomialNB | Classify ticket into 5 categories |
+| Summarization | Extractive (TF-IDF) | Pull key sentences from long threads |
+| Entity Extraction | spaCy NER | Pull names, dates, amounts |
+| API | FastAPI | Async endpoints, 500+ req/sec |
+| UI | Streamlit | Batch processing dashboard |
+
+## Benchmarks
+
+Tested on AWS t3.medium:
+
+| Category | Precision | Recall | F1 |
+|:---------|:---------:|:------:|:--:|
+| Refund request | 0.91 | 0.89 | 0.90 |
+| Technical issue | 0.88 | 0.92 | 0.90 |
+| Cancellation | 0.93 | 0.90 | 0.91 |
+| Product inquiry | 0.89 | 0.87 | 0.88 |
+| Billing inquiry | 0.90 | 0.91 | 0.90 |
+
+**Latency:** 12ms p99 per ticket
+
+## Extending to Transformers
+
+The router is abstracted so you can swap in BERT/RoBERTa when you have the compute budget:
 
 ```python
-# Example: Injecting a HuggingFace model into the router pipeline
 from src.models.router import TicketRouter
 from transformers import pipeline
 
@@ -42,79 +61,31 @@ class TransformerRouter(TicketRouter):
         return self.classifier(text)[0]['label']
 ```
 
----
-
-## Data Science Lifecycle
-
-The modeling approach prioritizes robust engineering and transparent evaluation over complex topologies:
-
-- **Exploratory Data Analysis**: Validated the perfectly balanced class distributions (20% per category) in the dataset, allowing for standard accuracy and macro F1 metrics without minority class penalties.
-- **Preprocessing**: Implemented custom tokenization routines handling domain-specific noise (e.g., email headers, automated footers) prior to n-gram extraction.
-- **Evaluation Methodology**: Utilized stratified 5-fold cross-validation during hyperparameter tuning to ensure generalization across the routing categories.
-
-### System Benchmarks
-
-| Category | Precision | Recall | F1-Score |
-| :--- | :---: | :---: | :---: |
-| Refund request | 0.91 | 0.89 | 0.90 |
-| Technical issue | 0.88 | 0.92 | 0.90 |
-| Cancellation request | 0.93 | 0.90 | 0.91 |
-| Product inquiry | 0.89 | 0.87 | 0.88 |
-| Billing inquiry | 0.90 | 0.91 | 0.90 |
-| **Global Macro Avg** | **0.90** | **0.90** | **0.90** |
-
-*Inference Latency: p99 latency of 12ms per ticket on a standard AWS t3.medium instance.*
-
----
-
-## Visual Proof
-
-![Dashboard Preview](docs/dashboard_preview.png)
-*(Example output of the Ticket Intel Streamlit evaluation dashboard.)*
-
----
-
-## Reproducibility and Quick Start
-
-To ensure simple reproducibility, data acquisition has been automated using the Kaggle CLI.
-
-### 1. Data Acquisition
-
-Ensure you have your Kaggle CLI credentials configured, then run:
+## Quick start
 
 ```bash
+# get data
 kaggle datasets download -d waseemalastal/customer-support-ticket-dataset
 unzip customer-support-ticket-dataset.zip -d .
 mv customer_support_tickets.csv tickets.csv
-```
 
-### 2. Local Environment Setup
-
-```bash
+# setup
 git clone https://github.com/CCallahan308/ticket-intel.git
 cd ticket-intel
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-```
 
-### 3. Running Services
-
-**Insight API** (Interactive docs at `http://localhost:8000/docs`)
-
-```bash
+# run api
 python main.py api
-```
 
-**Streamlit Dashboard**
-
-```bash
+# run ui
 python main.py ui
 ```
 
-### 4. Docker Deployment
+API docs at `http://localhost:8000/docs`
 
-Highly optimized Dockerfiles are provided for containerized deployment.
+## Docker
 
 ```bash
 docker build -t ticket-intel-api -f Dockerfile.api .
@@ -124,8 +95,21 @@ docker build -t ticket-intel-ui -f Dockerfile.ui .
 docker run -p 8501:8501 ticket-intel-ui
 ```
 
----
+## Repo structure
+
+```
+├── src/
+│   ├── api/          # FastAPI routes
+│   ├── models/       # routing, summarization, NER
+│   ├── data/         # loaders
+│   └── ui/           # Streamlit dashboard
+├── tests/
+├── main.py           # CLI entry point
+├── Dockerfile.api
+├── Dockerfile.ui
+└── requirements.txt
+```
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT
