@@ -6,7 +6,7 @@ Ticket Intel is engineered to be modular, extensible, and scalable. This section
 
 ## 🔀 System Pipeline
 
-The core value of Ticket Intel lies in its three primary ML models, wrapped by a fast API and a robust frontend.
+The core value of Ticket Intel lies in its three primary ML models, wrapped by a fast API and a solid frontend.
 
 ```mermaid
 graph TD
@@ -39,7 +39,7 @@ Currently implemented using a classic pipeline: **TF-IDF Vectorization** combine
 ### 2. Extractive Summarizer
 
 Extracts the most critical sentences from a support ticket rather than generating text from scratch. It uses word frequency scoring to weigh sentences.
-*Why?* Extractive summarization is computationally lighter than abstractive summarization (like GPT), and operates without the risk of "hallucinations" – crucial in a customer support context where factuality is mandatory.
+*Why?* Extractive summarization is computationally lighter than abstractive summarization (like GPT), and operates without the risk of "hallucinations" - crucial in a customer support context where factuality is mandatory.
 
 ### 3. Insight Extractor
 
@@ -64,7 +64,7 @@ ticket-intel/
 │   ├── models/        # The ML components defined above
 │   ├── ui/            # Streamlit dashboard implementation
 │   └── utils/         # Shared utilities (text cleaning, NLP ops)
-├── tests/             # Comprehensive Pytest suite
+├── tests/             # Full Pytest suite
 ├── main.py            # Elegant CLI entrypoint using argparse
 └── Dockerfile.*       # Containerizations configurations
 ```
