@@ -11,7 +11,7 @@
 
 *Fast routing • Auto-summarization • Entity extraction*
 
-**[🔴 Live Demo](https://ticket-intel-ccallahan308.streamlit.app/)** — Try the interactive demo
+**[🔴 Live Demo](https://ticket-intel-ccallahan308.streamlit.app/)** - Try the interactive demo
 
 </div>
 
@@ -19,7 +19,7 @@
 
 ## What this does
 
-Routes support tickets to the right team, summarizes long threads, and extracts key entities. Built for speed — 12ms p99 latency per ticket.
+Routes support tickets to the right team, summarizes long threads, and extracts key entities. Built for speed - 12ms p99 latency per ticket.
 
 Why not use LLMs? Because in high-volume support queues, you don't need GPT-4 to know that "refund please" goes to the billing team. TF-IDF + Naive Bayes handles 500+ req/sec for pennies.
 
