@@ -5,11 +5,7 @@ NOTE: There's also a simpler run_dashboard() in main.py. This file is the
 fancy version with custom CSS/components. Keeping both around since the
 simple one is easier to debug when something breaks here.
 """
-import sys
-from pathlib import Path
 from collections import Counter
-
-sys.path.insert(0, str(Path(__file__).parent))
 
 import streamlit as st
 import pandas as pd
@@ -125,7 +121,7 @@ with main_col:
             )
 
             with st.expander("Preview Data", expanded=False):
-                st.dataframe(df.head(5), width='stretch', hide_index=True)
+                st.dataframe(df.head(5), use_container_width=True, hide_index=True)
 
             # Column detection
             subj_col = find_column(df, "subj")
@@ -156,11 +152,11 @@ with main_col:
 
                 if "batch_results" not in st.session_state:
                     if st.button(
-                        "Analyze All Tickets", type="primary", width='stretch'
+                        "Analyze All Tickets", type="primary", use_container_width=True
                     ):
                         do_analysis = True
                 else:
-                    if st.button("Re-analyze Tickets", width='stretch'):
+                    if st.button("Re-analyze Tickets", use_container_width=True):
                         del st.session_state["batch_results"]
                         do_analysis = True
 
@@ -171,7 +167,7 @@ with main_col:
                     results = []
                     total = len(df)
 
-                    for idx, row in df.iterrows():
+                    for i, (_, row) in enumerate(df.iterrows()):
                         txt = f"{row.get(subj_col, '')} {row.get(body_col, '')}"
 
                         cat, conf, _ = route(txt, pipe, i2l)
@@ -191,9 +187,9 @@ with main_col:
                             }
                         )
 
-                        pct = (idx + 1) / total
+                        pct = (i + 1) / total
                         progress_bar.progress(
-                            pct, text=f"Processing {idx + 1:,} / {total:,}"
+                            pct, text=f"Processing {i + 1:,} / {total:,}"
                         )
 
                     progress_bar.empty()
@@ -274,7 +270,7 @@ with main_col:
                     )
                     st.dataframe(
                         output_df.head(25),
-                        width='stretch',
+                        use_container_width=True,
                         hide_index=True,
                         column_config={
                             "confidence": st.column_config.ProgressColumn(
@@ -299,13 +295,13 @@ with main_col:
                     with viz_row1_col1:
                         st.plotly_chart(
                             category_bar_chart(output_df["category"].value_counts()),
-                            width='stretch',
+                            use_container_width=True,
                         )
 
                     with viz_row1_col2:
                         st.plotly_chart(
                             confidence_histogram(output_df["confidence"]),
-                            width='stretch',
+                            use_container_width=True,
                         )
 
                     viz_row2_col1, viz_row2_col2 = st.columns(2)
@@ -313,7 +309,7 @@ with main_col:
                     with viz_row2_col1:
                         st.plotly_chart(
                             sentiment_donut(output_df["sentiment"].value_counts()),
-                            width='stretch',
+                            use_container_width=True,
                         )
 
                     with viz_row2_col2:
@@ -323,7 +319,7 @@ with main_col:
                                 [k.strip() for k in str(kw_str).split(",") if k.strip()]
                             )
                         st.plotly_chart(
-                            keyword_barchart(all_keywords), width='stretch'
+                            keyword_barchart(all_keywords), use_container_width=True
                         )
 
                     st.markdown(
@@ -344,7 +340,7 @@ with main_col:
                             "analyzed_tickets.csv",
                             "text/csv",
                             type="primary",
-                            width='stretch',
+                            use_container_width=True,
                         )
 
         else:
@@ -386,11 +382,11 @@ with main_col:
             stat_col1, stat_col2 = st.columns(2)
 
             with stat_col1:
-                st.plotly_chart(category_scatter(results), width='stretch')
+                st.plotly_chart(category_scatter(results), use_container_width=True)
 
             with stat_col2:
                 st.plotly_chart(
-                    sentiment_by_category(results), width='stretch'
+                    sentiment_by_category(results), use_container_width=True
                 )
 
             # Entity stats
@@ -401,12 +397,12 @@ with main_col:
             with stat_col3:
                 st.plotly_chart(
                     entity_count_histogram(results["entity_count"]),
-                    width='stretch',
+                    use_container_width=True,
                 )
 
             with stat_col4:
                 import plotly.express as px
-                from styles import PLOTLY_TEMPLATE
+                from src.ui.styles import PLOTLY_TEMPLATE
 
                 # Use a box plot for better distribution visualization
                 fig = px.box(
@@ -436,7 +432,7 @@ with main_col:
                     margin=dict(l=100),
                 )
                 fig.update_layout(**PLOTLY_TEMPLATE["layout"])
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
 
         else:
             st.markdown(

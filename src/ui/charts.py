@@ -4,7 +4,7 @@ import plotly.express as px
 import pandas as pd
 from collections import Counter
 
-from styles import COLORS, PLOTLY_TEMPLATE, SENTIMENT_COLORS
+from src.ui.styles import COLORS, PLOTLY_TEMPLATE, SENTIMENT_COLORS
 
 
 def _apply_template(fig):
@@ -131,7 +131,6 @@ def sentiment_donut(data: pd.Series) -> go.Figure:
 
 
 def keyword_barchart(keywords: list, title: str = "Top Keywords") -> go.Figure:
-    # TODO: accept a max_keywords param to customize
     if not keywords:
         fig = go.Figure()
         fig.add_annotation(text="No keywords found", x=0.5, y=0.5)
