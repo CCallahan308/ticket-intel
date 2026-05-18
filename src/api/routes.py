@@ -8,7 +8,6 @@ from src.api.schemas import (
     HealthResponse,
 )
 
-# We will create these models shortly
 from src.models.router import load_router, route
 from src.models.summarizer import summarize
 from src.models.insights import insights
@@ -16,7 +15,6 @@ from src.models.insights import insights
 router = APIRouter()
 
 
-# Global state for the models (in a real app, this might be managed differently, but keeping it simple for now)
 class ModelState:
     pipe = None
     l2i = None
@@ -26,8 +24,8 @@ class ModelState:
 state = ModelState()
 
 
-@router.on_event("startup")
-async def load_models():
+def init_models() -> None:
+    """Load models into module-level state. Called from the app lifespan."""
     state.pipe, state.l2i, state.i2l = load_router()
 
 
