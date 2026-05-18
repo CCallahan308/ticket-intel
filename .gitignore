@@ -1,7 +1,15 @@
-# models
-models/
+# models (top-level only, not src/models/)
+/models/
 *.joblib
 *.pkl
+
+# model artifacts (keep the directory, not the binaries)
+src/models/artifacts/*.pkl
+src/models/artifacts/*.json
+!src/models/artifacts/.gitkeep
+
+# mkdocs build output
+site/
 
 # python
 __pycache__/

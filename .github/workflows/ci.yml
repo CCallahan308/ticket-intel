@@ -22,10 +22,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest httpx ruff
+          pip install pytest pytest-cov httpx ruff
 
       - name: Lint with ruff
         run: ruff check src tests
 
+      - name: Initialize model
+        run: python -c "from src.models.router import load_router; load_router()"
+
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v --cov=src --cov-report=term-missing
