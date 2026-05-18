@@ -3,7 +3,7 @@
 # pipeline that the API and Streamlit app run on.
 -r requirements.txt
 transformers>=4.30.0
-torch>=2.0.0
+torch>=2.12.0
 datasets>=2.14.0
 accelerate>=0.21.0
 wandb>=0.15.0
