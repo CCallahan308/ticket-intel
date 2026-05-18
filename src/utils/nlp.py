@@ -35,7 +35,7 @@ def split_sentences(txt: str) -> list[str]:
     nltk = _init_nlp()
     try:
         return nltk.sent_tokenize(txt)
-    except:
+    except Exception:
         return [s.strip() for s in re.split(r"[.!?]+", txt) if s.strip()]
 
 
@@ -43,6 +43,6 @@ def tokenize(txt: str) -> list[str]:
     nltk = _init_nlp()
     try:
         toks = nltk.word_tokenize(txt.lower())
-    except:
+    except Exception:
         toks = txt.lower().split()
     return [t for t in toks if t.isalpha() and t not in _STOP and len(t) > 2]

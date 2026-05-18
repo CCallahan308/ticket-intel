@@ -1,16 +1,15 @@
-from pydantic import BaseModel
-from typing import Dict, List
+from pydantic import BaseModel, Field
 
 
 class TicketRequest(BaseModel):
-    subject: str = ""
-    body: str = ""
+    subject: str = Field(default="", min_length=0)
+    body: str = Field(default="", description="Ticket body text")
 
 
 class RouteResponse(BaseModel):
     category: str
     confidence: float
-    probabilities: Dict[str, float]
+    probabilities: dict[str, float]
 
 
 class SummaryResponse(BaseModel):
@@ -21,8 +20,8 @@ class SummaryResponse(BaseModel):
 
 
 class InsightsResponse(BaseModel):
-    entities: List[Dict[str, str]]
-    keywords: List[str]
+    entities: list[dict[str, str]]
+    keywords: list[str]
     sentiment: str
     entity_count: int
 
