@@ -1,5 +1,3 @@
-import pytest
-from unittest.mock import MagicMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from src.api.routes import router
@@ -8,24 +6,6 @@ app = FastAPI()
 app.include_router(router)
 
 client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def mock_spacy_nlp(monkeypatch):
-    import src.models.insights as insights_module
-
-    class DummyDoc:
-        def __init__(self, text):
-            self.ents = []
-
-        def __iter__(self):
-            return iter([])
-
-    dummy_nlp = MagicMock()
-    dummy_nlp.return_value = DummyDoc("")
-    # insights_module no longer uses get_nlp, but keep the fixture for safety
-    if hasattr(insights_module, "get_nlp"):
-        monkeypatch.setattr(insights_module, "get_nlp", lambda: dummy_nlp)
 
 
 def test_health():
@@ -50,6 +30,7 @@ def test_route_success(monkeypatch):
     class DummyPipe:
         def predict_proba(self, X):
             import numpy as np
+
             return np.array([[0.1, 0.9]])
 
     monkeypatch.setattr(state, "pipe", DummyPipe())
@@ -61,12 +42,18 @@ def test_route_success(monkeypatch):
 
 
 def test_summarize_endpoint():
-    response = client.post("/summarize", json={"subject": "Short", "body": "This is very short and simple text."})
+    response = client.post(
+        "/summarize",
+        json={"subject": "Short", "body": "This is very short and simple text."},
+    )
     assert response.status_code == 200
     assert "summary" in response.json()
 
 
 def test_insights_endpoint():
-    response = client.post("/insights", json={"subject": "Issue", "body": "I have an issue with order #12345"})
+    response = client.post(
+        "/insights",
+        json={"subject": "Issue", "body": "I have an issue with order #12345"},
+    )
     assert response.status_code == 200
     assert "sentiment" in response.json()

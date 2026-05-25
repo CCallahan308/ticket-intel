@@ -1,4 +1,5 @@
 """NLP insights: entities, keywords, and sentiment for support tickets."""
+
 from __future__ import annotations
 
 import re
@@ -6,19 +7,84 @@ from collections import Counter
 
 
 _STOP_WORDS = {
-    "the", "and", "for", "that", "this", "with", "are", "was", "have", "not",
-    "but", "from", "you", "your", "our", "can", "has", "been", "will", "also",
-    "its", "all", "just", "more", "when", "what", "how", "why", "where", "who",
-    "get", "got", "does", "did", "any", "one", "two",
+    "the",
+    "and",
+    "for",
+    "that",
+    "this",
+    "with",
+    "are",
+    "was",
+    "have",
+    "not",
+    "but",
+    "from",
+    "you",
+    "your",
+    "our",
+    "can",
+    "has",
+    "been",
+    "will",
+    "also",
+    "its",
+    "all",
+    "just",
+    "more",
+    "when",
+    "what",
+    "how",
+    "why",
+    "where",
+    "who",
+    "get",
+    "got",
+    "does",
+    "did",
+    "any",
+    "one",
+    "two",
 }
 
-_POSITIVE = {"thank", "thanks", "great", "awesome", "excellent", "love",
-             "perfect", "good", "helpful", "appreciate", "resolved", "fixed",
-             "working", "wonderful"}
-_NEGATIVE = {"error", "bug", "crash", "broken", "fail", "failed", "failure",
-             "issue", "problem", "wrong", "slow", "bad", "terrible", "annoying",
-             "frustrating", "upset", "angry", "worst", "unusable", "stuck",
-             "awful"}
+_POSITIVE = {
+    "thank",
+    "thanks",
+    "great",
+    "awesome",
+    "excellent",
+    "love",
+    "perfect",
+    "good",
+    "helpful",
+    "appreciate",
+    "resolved",
+    "fixed",
+    "working",
+    "wonderful",
+}
+_NEGATIVE = {
+    "error",
+    "bug",
+    "crash",
+    "broken",
+    "fail",
+    "failed",
+    "failure",
+    "issue",
+    "problem",
+    "wrong",
+    "slow",
+    "bad",
+    "terrible",
+    "annoying",
+    "frustrating",
+    "upset",
+    "angry",
+    "worst",
+    "unusable",
+    "stuck",
+    "awful",
+}
 
 
 def extract_keywords(text: str, top_n: int = 5) -> list[str]:

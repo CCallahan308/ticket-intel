@@ -5,12 +5,15 @@ WORKDIR /app
 # Install dependencies first for layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-# Need to download nltk dependencies independently for docker builds
-RUN python -m nltk.downloader punkt
 
-# Copy the rest
+# Copy source
 COPY src /app/src
-COPY models /app/models
 COPY main.py /app/main.py
+
+# Train the router at build time so the image ships with a ready artifact
+# (artifacts are git-ignored, so they are generated rather than copied).
+RUN python -m src.models.train_router
+
+EXPOSE 8000
 
 CMD ["python", "main.py", "api"]

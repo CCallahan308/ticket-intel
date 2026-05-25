@@ -1,4 +1,5 @@
 """Extractive ticket summarizer using sentence scoring."""
+
 from __future__ import annotations
 
 import re
@@ -11,8 +12,26 @@ def _sentences(text: str) -> list[str]:
 
 def _word_freq(text: str) -> Counter:
     words = re.findall(r"\b[a-z]{3,}\b", text.lower())
-    stop = {"the", "and", "for", "that", "this", "with", "are", "was", "have",
-            "not", "but", "from", "you", "your", "our", "can", "has", "been"}
+    stop = {
+        "the",
+        "and",
+        "for",
+        "that",
+        "this",
+        "with",
+        "are",
+        "was",
+        "have",
+        "not",
+        "but",
+        "from",
+        "you",
+        "your",
+        "our",
+        "can",
+        "has",
+        "been",
+    }
     return Counter(w for w in words if w not in stop)
 
 
@@ -34,9 +53,7 @@ def summarize(text: str, n: int = 2) -> tuple[str, int]:
         score = sum(freq[w] for w in words) / max(len(words), 1)
         scores.append(score)
 
-    top_indices = sorted(
-        range(len(scores)), key=lambda i: scores[i], reverse=True
-    )[:n]
+    top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n]
     top_indices.sort()
     result = " ".join(sents[i] for i in top_indices)
     return result, len(top_indices)

@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import re
 import string
 from pathlib import Path
 from typing import Optional
+
 import numpy as np
 import pandas as pd
 
@@ -9,7 +12,8 @@ PKG_DIR = Path(__file__).parent.parent.parent
 
 COL_VARIANTS = {
     "subj": ["Ticket Subject", "Subject", "subject", "title"],
-    "body": ["Ticket Description", "Body", "body", "text", "message"],
+    "body": ["Ticket Description", "Body", "body", "text", "message",
+             "instruction", "utterance", "query"],
     "cat": ["Ticket Type", "Category", "category", "type", "label"],
 }
 
@@ -41,7 +45,7 @@ def clean_text(txt: str) -> str:
     return t
 
 
-def load_tickets(fp: Path = None) -> pd.DataFrame:
+def load_tickets(fp: Optional[Path] = None) -> pd.DataFrame:
     if fp is None:
         fp = PKG_DIR / "tickets.csv"
 
@@ -59,8 +63,58 @@ def load_tickets(fp: Path = None) -> pd.DataFrame:
             )
 
     df = pd.read_csv(fp)
+    if df.empty:
+        raise ValueError(f"{fp} contains no rows")
+
     df.attrs["subj"] = find_column(df, "subj")
     df.attrs["body"] = find_column(df, "body")
     df.attrs["cat"] = find_column(df, "cat")
 
+    if df.attrs["subj"] is None and df.attrs["body"] is None:
+        raise ValueError(
+            f"{fp} has no recognizable subject/body column; "
+            f"found columns: {list(df.columns)}"
+        )
+
     return df
+
+
+def load_labeled_tickets(fp: Path) -> tuple[list[str], list[str]]:
+    """Load ``(texts, labels)`` for training/evaluation from a CSV.
+
+    Supports both the simple ``text``/``category`` schema and the Kaggle
+    subject/description/type schema — columns are auto-detected, subject and
+    body are concatenated and cleaned, and rows with no label or empty text
+    are dropped.
+    """
+    if not fp.exists():
+        raise FileNotFoundError(f"{fp} not found")
+    df = pd.read_csv(fp)
+    if df.empty:
+        raise ValueError(f"{fp} contains no rows")
+
+    if {"text", "category"} <= set(df.columns):
+        texts = df["text"].astype(str)
+        labels = df["category"]
+    else:
+        subj, body, cat = (find_column(df, k) for k in ("subj", "body", "cat"))
+        if cat is None or (subj is None and body is None):
+            raise ValueError(
+                f"{fp}: need a category column and at least one of subject/body. "
+                f"Columns present: {list(df.columns)}"
+            )
+        combined = None
+        for col in (subj, body):
+            if col is None:
+                continue
+            part = df[col].astype(str)
+            combined = part if combined is None else combined.str.cat(part, sep=" ")
+        texts = combined.map(clean_text)
+        labels = df[cat]
+
+    mask = labels.notna() & texts.astype(str).str.strip().astype(bool)
+    texts_out = texts[mask].astype(str).tolist()
+    labels_out = labels[mask].astype(str).tolist()
+    if not texts_out:
+        raise ValueError(f"{fp}: no usable rows after cleaning")
+    return texts_out, labels_out

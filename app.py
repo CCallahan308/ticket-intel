@@ -3,29 +3,33 @@ Ticket Intel - Production-Grade Portfolio Demo
 Design System: Clean, professional, business-intelligence aesthetic
 """
 
+import time
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import re
-from collections import Counter
+
+from src.models.router import load_router, route
+from src.models.summarizer import summarize
+from src.models.insights import extract_entities, extract_keywords, detect_sentiment
+from src.models.evaluate import evaluate
 
 # ═══════════════════════════════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════
 
 st.set_page_config(
-    page_title="Ticket Intel | Christian Callahan",
-    page_icon="🎫",
-    layout="wide"
+    page_title="Ticket Intel | Christian Callahan", page_icon="🎫", layout="wide"
 )
 
 # ═══════════════════════════════════════════════════════════════════════════
 # DESIGN SYSTEM
 # ═══════════════════════════════════════════════════════════════════════════
 
-st.markdown("""
+st.markdown(
+    """
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
@@ -349,157 +353,175 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # DATA & MODELS
 # ═══════════════════════════════════════════════════════════════════════════
 
-CATEGORIES = {
-    "Refund Request": ["refund", "money back", "return", "charge", "reimburse", "credit"],
-    "Technical Issue": ["error", "bug", "crash", "not working", "broken", "issue", "problem", "fail"],
-    "Cancellation": ["cancel", "subscription", "stop", "end", "terminate", "close account"],
-    "Product Inquiry": ["how do", "how to", "question", "wondering", "curious", "can i", "feature"],
-    "Billing Inquiry": ["bill", "charge", "payment", "invoice", "price", "cost", "fee"]
-}
+
+@st.cache_resource
+def load_model():
+    """Load (or train, on first run) the real TF-IDF + Naive Bayes router."""
+    return load_router()
+
+
+@st.cache_data
+def load_metrics():
+    """Real cross-validated metrics on the synthetic demo data."""
+    return evaluate()
+
+
+pipe, _l2i, i2l = load_model()
 
 SAMPLE_TICKETS = [
-    {"subject": "Need refund for duplicate charge", "body": "I was charged twice for my subscription this month. Please refund the duplicate charge to my card."},
-    {"subject": "App crashes on startup", "body": "Every time I open the app, it crashes immediately. I've tried reinstalling but the issue persists. Running iOS 17."},
-    {"subject": "How do I export my data?", "body": "I need to export all my project data to CSV. Is there a way to do this in bulk or do I have to export each project individually?"},
-    {"subject": "Cancel my subscription", "body": "Please cancel my Pro subscription effective immediately. I no longer need the service."},
-    {"subject": "Question about annual pricing", "body": "I see you offer monthly plans but I'm interested in annual billing. Do you offer any discount for paying yearly?"},
+    {
+        "subject": "Need refund for duplicate charge",
+        "body": "I was charged twice for my subscription this month. Please refund the duplicate charge to my card.",
+    },
+    {
+        "subject": "App crashes on startup",
+        "body": "Every time I open the app, it crashes immediately. I've tried reinstalling but the issue persists. Running iOS 17.",
+    },
+    {
+        "subject": "How do I export my data?",
+        "body": "I need to export all my project data to CSV. Is there a way to do this in bulk or do I have to export each project individually?",
+    },
+    {
+        "subject": "Cancel my subscription",
+        "body": "Please cancel my Pro subscription effective immediately. I no longer need the service.",
+    },
+    {
+        "subject": "Question about annual pricing",
+        "body": "I see you offer monthly plans but I'm interested in annual billing. Do you offer any discount for paying yearly?",
+    },
 ]
 
-def classify_ticket(text: str) -> tuple:
-    """Simple keyword-based routing (simulates production TF-IDF model)"""
-    text_lower = text.lower()
-    scores = {cat: sum(1 for kw in kws if kw in text_lower) for cat, kws in CATEGORIES.items()}
-    for cat in scores:
-        scores[cat] += np.random.uniform(0, 0.5)
-    best = max(scores, key=scores.get)
-    confidence = min(0.95, 0.7 + scores[best] * 0.08 + np.random.uniform(0, 0.1))
-    return best, confidence
+# Map the model's real category labels to the CSS tag styles.
+_TAG_CLASSES = {
+    "Bug": "tag-technical",
+    "Performance": "tag-cancellation",
+    "Billing": "tag-billing",
+    "Account": "tag-product",
+    "Feature Request": "tag-refund",
+    "General": "tag-product",
+}
 
-def summarize(text: str, n: int = 2) -> str:
-    """Extractive summarization"""
-    sentences = [s.strip() for s in re.split(r'[.!?]+', text) if len(s.strip()) > 10]
-    return '. '.join(sentences[:n]) + ('.' if sentences else '')
 
-def extract_entities(text: str) -> list:
-    """Simple entity extraction"""
-    entities = []
-    entities.extend([("EMAIL", e) for e in re.findall(r'[\w.-]+@[\w.-]+\.\w+', text)])
-    entities.extend([("ORDER", o) for o in re.findall(r'#?\d{6,}', text)])
-    entities.extend([("AMOUNT", a) for a in re.findall(r'\$[\d,]+(?:\.\d{2})?', text)])
-    entities.extend([("DATE", d) for d in re.findall(r'\d{1,2}/\d{1,2}/\d{2,4}|\d{4}-\d{2}-\d{2}', text)])
-    return entities
+def classify_ticket(text: str) -> tuple[str, float]:
+    """Route a ticket with the real trained pipeline."""
+    category, confidence, _ = route(text, pipe, i2l)
+    return category, confidence
 
-def get_sentiment(text: str) -> str:
-    """Simple sentiment analysis"""
-    neg_words = ["angry", "frustrated", "terrible", "awful", "worst", "hate", "disappointed"]
-    pos_words = ["great", "awesome", "love", "excellent", "amazing", "thank", "helpful"]
-    text_lower = text.lower()
-    neg = sum(1 for w in neg_words if w in text_lower)
-    pos = sum(1 for w in pos_words if w in text_lower)
-    return "negative" if neg > pos else "positive" if pos > neg else "neutral"
 
-def get_keywords(text: str, n: int = 5) -> list:
-    """Extract keywords"""
-    stop_words = {"this", "that", "with", "have", "from", "they", "would", "there", "their", "what", "about", "which", "when", "could", "your"}
-    words = [w for w in re.findall(r'\b[a-z]{4,}\b', text.lower()) if w not in stop_words]
-    return [w for w, _ in Counter(words).most_common(n)]
+def analyze_entities(text: str) -> list[tuple[str, str]]:
+    """Adapt the model's entity dicts to (type, value) tuples for rendering."""
+    return [(e["type"], e["text"]) for e in extract_entities(text)]
+
 
 def get_tag_class(category: str) -> str:
-    mapping = {
-        "Refund Request": "tag-refund",
-        "Technical Issue": "tag-technical",
-        "Cancellation": "tag-cancellation",
-        "Product Inquiry": "tag-product",
-        "Billing Inquiry": "tag-billing"
-    }
-    return mapping.get(category, "tag-product")
+    return _TAG_CLASSES.get(category, "tag-product")
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # UI COMPONENTS
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def render_header():
-    st.markdown("""
+    metrics = load_metrics()
+    acc = metrics["model"]["accuracy"]
+    st.markdown(
+        f"""
     <div class="app-header">
         <div>
             <h1 class="app-title">Ticket Intelligence System</h1>
             <p class="app-subtitle">
-                Automatic ticket classification, summarization, and entity extraction. 
-                Routes support requests in 12ms with 90% accuracy.
+                Ticket classification, extractive summarization, and entity
+                extraction powered by a TF-IDF + Naive Bayes pipeline.
             </p>
             <div class="app-meta">
                 <div class="meta-item">
                     <a href="https://github.com/CCallahan308/ticket-intel">View Source</a>
                 </div>
                 <div class="meta-item">•</div>
-                <div class="meta-item">12ms p99 latency</div>
+                <div class="meta-item">TF-IDF + Naive Bayes</div>
                 <div class="meta-item">•</div>
-                <div class="meta-item">500+ req/sec</div>
+                <div class="meta-item">{acc:.0%} CV accuracy on synthetic demo data</div>
             </div>
         </div>
-        <div class="status-badge">Production Ready</div>
+        <div class="status-badge">Demo · synthetic data</div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 def render_tabs():
     tab1, tab2, tab3 = st.tabs(["Single Ticket", "Batch Analysis", "Performance"])
-    
+
     with tab1:
         render_single_ticket()
-    
+
     with tab2:
         render_batch_analysis()
-    
+
     with tab3:
         render_performance()
 
+
 def render_single_ticket():
     col1, col2 = st.columns([1, 1])
-    
+
     with col1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="section">
             <h3 class="section-title">Input</h3>
             <p class="section-subtitle">Enter a support ticket to analyze</p>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         sample_idx = st.selectbox(
             "Sample tickets",
             range(len(SAMPLE_TICKETS)),
             format_func=lambda i: SAMPLE_TICKETS[i]["subject"],
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
-        
+
         subject = st.text_input("Subject", value=SAMPLE_TICKETS[sample_idx]["subject"])
-        body = st.text_area("Body", value=SAMPLE_TICKETS[sample_idx]["body"], height=150)
-        
+        body = st.text_area(
+            "Body", value=SAMPLE_TICKETS[sample_idx]["body"], height=150
+        )
+
         analyze = st.button("Analyze Ticket", type="primary")
-    
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="section">
             <h3 class="section-title">Results</h3>
             <p class="section-subtitle">Classification and extraction</p>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         if analyze or subject:
             full_text = f"{subject} {body}"
             category, confidence = classify_ticket(full_text)
-            summary = summarize(body)
-            entities = extract_entities(full_text)
-            sentiment = get_sentiment(full_text)
-            keywords = get_keywords(full_text)
-            
+            summary, _ = summarize(body)
+            entities = analyze_entities(full_text)
+            sentiment = detect_sentiment(full_text)
+            keywords = extract_keywords(full_text)
+
             # Classification results
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="result-grid">
                 <div class="result-metric">
                     <div class="label">Category</div>
@@ -511,152 +533,225 @@ def render_single_ticket():
                 </div>
                 <div class="result-metric">
                     <div class="label">Sentiment</div>
-                    <div class="value" style="color: {'#ef4444' if sentiment == 'negative' else '#10b981' if sentiment == 'positive' else '#71717a'};">{sentiment.title()}</div>
+                    <div class="value" style="color: {"#ef4444" if sentiment == "negative" else "#10b981" if sentiment == "positive" else "#71717a"};">{sentiment.title()}</div>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-            
+            """,
+                unsafe_allow_html=True,
+            )
+
             # Summary
             st.markdown("**Summary**")
             st.info(summary or "No summary generated")
-            
+
             # Entities
             if entities:
                 st.markdown("**Entities**")
-                entity_html = "".join([
-                    f'<span class="entity-pill"><span class="entity-type">{t}:</span> {v}</span>'
-                    for t, v in entities
-                ])
+                entity_html = "".join(
+                    [
+                        f'<span class="entity-pill"><span class="entity-type">{t}:</span> {v}</span>'
+                        for t, v in entities
+                    ]
+                )
                 st.markdown(entity_html, unsafe_allow_html=True)
-            
+
             # Keywords
             st.markdown("**Keywords**")
             st.markdown(" · ".join([f"`{kw}`" for kw in keywords]))
 
+
 @st.cache_data
 def generate_batch_data(n=150):
     np.random.seed(42)
-    
+
     templates = [
-        ("Refund for order #{order_id}", "Charged incorrectly for order #{order_id}. Amount was ${amount}."),
+        (
+            "Refund for order #{order_id}",
+            "Charged incorrectly for order #{order_id}. Amount was ${amount}.",
+        ),
         ("App crashes on {device}", "The app keeps crashing on my {device}."),
         ("How to {action}?", "Trying to {action} but can't find option."),
         ("Cancel subscription", "Cancel my subscription effective immediately."),
-        ("Billing question ${amount}", "Question about ${amount} charge on my statement."),
+        (
+            "Billing question ${amount}",
+            "Question about ${amount} charge on my statement.",
+        ),
     ]
-    
+
     tickets = []
     for _ in range(n):
         subj_tpl, body_tpl = templates[np.random.randint(0, len(templates))]
-        
+
         subj = subj_tpl.format(
             order_id=np.random.randint(100000, 999999),
             device=np.random.choice(["iPhone", "Android", "Windows"]),
-            action=np.random.choice(["export data", "change password", "update billing"]),
-            amount=np.random.choice([9.99, 19.99, 29.99, 49.99])
+            action=np.random.choice(
+                ["export data", "change password", "update billing"]
+            ),
+            amount=np.random.choice([9.99, 19.99, 29.99, 49.99]),
         )
-        
+
         body = body_tpl.format(
             order_id=np.random.randint(100000, 999999),
             device=np.random.choice(["iPhone", "Android", "Windows"]),
-            action=np.random.choice(["export data", "change password", "update billing"]),
-            amount=np.random.choice([9.99, 19.99, 29.99, 49.99])
+            action=np.random.choice(
+                ["export data", "change password", "update billing"]
+            ),
+            amount=np.random.choice([9.99, 19.99, 29.99, 49.99]),
         )
-        
+
         full = f"{subj} {body}"
         cat, conf = classify_ticket(full)
-        sent = get_sentiment(full)
-        
-        tickets.append({
-            "subject": subj,
-            "category": cat,
-            "confidence": conf,
-            "sentiment": sent,
-            "body": body[:80] + "..."
-        })
-    
+        sent = detect_sentiment(full)
+
+        tickets.append(
+            {
+                "subject": subj,
+                "category": cat,
+                "confidence": conf,
+                "sentiment": sent,
+                "body": body[:80] + "...",
+            }
+        )
+
     return pd.DataFrame(tickets)
+
 
 def render_batch_analysis():
     df = generate_batch_data()
-    
+
     # KPIs
     st.markdown('<div class="metrics-grid">', unsafe_allow_html=True)
-    
+
     kpis = [
         ("Total Tickets", f"{len(df):,}"),
         ("Avg Confidence", f"{df['confidence'].mean():.0%}"),
-        ("Categories", str(df['category'].nunique())),
-        ("Negative Rate", f"{(df['sentiment'] == 'negative').mean():.0%}")
+        ("Categories", str(df["category"].nunique())),
+        ("Negative Rate", f"{(df['sentiment'] == 'negative').mean():.0%}"),
     ]
-    
+
     for label, value in kpis:
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="metric-card">
             <div class="metric-label">{label}</div>
             <div class="metric-value">{value}</div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
     # Charts
     col1, col2 = st.columns(2)
-    
+
     with col1:
         st.markdown("**Tickets by Category**")
-        cat_counts = df['category'].value_counts()
-        fig = px.bar(x=cat_counts.index, y=cat_counts.values, color=cat_counts.values,
-                     color_continuous_scale="Teal")
-        fig.update_layout(
-            height=280, showlegend=False,
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family='Inter', color='#a1a1aa', size=11),
-            xaxis_title="", yaxis_title="Count"
+        cat_counts = df["category"].value_counts()
+        fig = px.bar(
+            x=cat_counts.index,
+            y=cat_counts.values,
+            color=cat_counts.values,
+            color_continuous_scale="Teal",
         )
-        fig.update_xaxes(gridcolor='rgba(39, 39, 42, 0.5)', tickangle=45)
-        fig.update_yaxes(gridcolor='rgba(39, 39, 42, 0.5)')
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
+        fig.update_layout(
+            height=280,
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Inter", color="#a1a1aa", size=11),
+            xaxis_title="",
+            yaxis_title="Count",
+        )
+        fig.update_xaxes(gridcolor="rgba(39, 39, 42, 0.5)", tickangle=45)
+        fig.update_yaxes(gridcolor="rgba(39, 39, 42, 0.5)")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
     with col2:
         st.markdown("**Sentiment Distribution**")
-        sent_counts = df['sentiment'].value_counts()
-        fig = px.pie(values=sent_counts.values, names=sent_counts.index,
-                     color_discrete_sequence=['#10b981', '#71717a', '#ef4444'])
-        fig.update_layout(
-            height=280, showlegend=True,
-            paper_bgcolor='rgba(0,0,0,0)',
-            font=dict(family='Inter', color='#a1a1aa', size=11)
+        sent_counts = df["sentiment"].value_counts()
+        fig = px.pie(
+            values=sent_counts.values,
+            names=sent_counts.index,
+            color_discrete_sequence=["#10b981", "#71717a", "#ef4444"],
         )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
+        fig.update_layout(
+            height=280,
+            showlegend=True,
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Inter", color="#a1a1aa", size=11),
+        )
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
     # Data table
     st.markdown("**Sample Results**")
     st.dataframe(
-        df[['subject', 'category', 'confidence', 'sentiment']].head(15),
+        df[["subject", "category", "confidence", "sentiment"]].head(15),
         use_container_width=True,
         hide_index=True,
         column_config={
-            "confidence": st.column_config.ProgressColumn("Confidence", format="%.0f%%", min_value=0, max_value=1)
-        }
+            "confidence": st.column_config.ProgressColumn(
+                "Confidence", format="%.0f%%", min_value=0, max_value=1
+            )
+        },
     )
 
+
 @st.cache_data
-def generate_latency_data():
-    np.random.seed(42)
-    return np.clip(np.concatenate([
-        np.random.normal(5, 1.5, 500),
-        np.random.normal(8, 2, 150),
-        np.random.normal(12, 1, 20)
-    ]), 1, 20)
+def measure_latency(n: int = 500) -> np.ndarray:
+    """Measure REAL single-ticket routing latency on this instance (milliseconds)."""
+    sample = "App crashes on login and I cannot reset my password or get a refund"
+    route(sample, pipe, i2l)  # warm up
+    times = []
+    for _ in range(n):
+        t0 = time.perf_counter()
+        route(sample, pipe, i2l)
+        times.append((time.perf_counter() - t0) * 1000.0)
+    return np.array(times)
+
+
+def _report_row(name: str, m: dict) -> str:
+    return (
+        f'<tr><td style="padding: 0.5rem 0;">{name}</td>'
+        f'<td align="center">{m["precision"]:.2f}</td>'
+        f'<td align="center">{m["recall"]:.2f}</td>'
+        f'<td align="center"><strong>{m["f1-score"]:.2f}</strong></td></tr>'
+    )
+
 
 def render_performance():
+    metrics = load_metrics()
+    latencies = measure_latency()
+    p50 = float(np.median(latencies))
+    p99 = float(np.percentile(latencies, 99))
+
+    st.markdown(
+        f"""
+        <div style="background: rgba(20,184,166,0.08); border: 1px solid rgba(20,184,166,0.2);
+                    border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;
+                    font-size: 0.8125rem; color: #a1a1aa;">
+            Metrics below come from <strong>{metrics["evaluation"]}</strong> on
+            <strong>{metrics["data_source"]} ({metrics["n_samples"]} examples)</strong>.
+            They show the pipeline working on a small synthetic set and are
+            <strong>not</strong> a benchmark on real-world data. Latency is measured
+            live on this instance.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        st.markdown("""
+        rows = "".join(
+            _report_row(name, metrics["per_class"][name])
+            for name in metrics["categories"]
+        )
+        st.markdown(
+            f"""
         <div class="card">
-            <div class="card-header">Classification Report</div>
+            <div class="card-header">Classification Report (cross-validated)</div>
             <table style="width: 100%; font-size: 0.8125rem; color: var(--color-text-secondary);">
                 <tr style="border-bottom: 1px solid var(--color-border-subtle);">
                     <th style="text-align: left; padding: 0.5rem 0;">Category</th>
@@ -664,66 +759,81 @@ def render_performance():
                     <th style="text-align: center;">Recall</th>
                     <th style="text-align: center;">F1</th>
                 </tr>
-                <tr><td style="padding: 0.5rem 0;">Refund Request</td><td align="center">0.91</td><td align="center">0.89</td><td align="center"><strong>0.90</strong></td></tr>
-                <tr><td style="padding: 0.5rem 0;">Technical Issue</td><td align="center">0.88</td><td align="center">0.92</td><td align="center"><strong>0.90</strong></td></tr>
-                <tr><td style="padding: 0.5rem 0;">Cancellation</td><td align="center">0.93</td><td align="center">0.90</td><td align="center"><strong>0.91</strong></td></tr>
-                <tr><td style="padding: 0.5rem 0;">Product Inquiry</td><td align="center">0.89</td><td align="center">0.87</td><td align="center"><strong>0.88</strong></td></tr>
-                <tr><td style="padding: 0.5rem 0;">Billing Inquiry</td><td align="center">0.90</td><td align="center">0.91</td><td align="center"><strong>0.90</strong></td></tr>
+                {rows}
             </table>
             <p style="margin-top: 1rem; font-size: 0.8125rem; color: var(--color-text-tertiary);">
-                <strong>Overall:</strong> 90% accuracy • 0.90 macro F1
+                <strong>Overall:</strong> {metrics["model"]["accuracy"]:.0%} accuracy &bull;
+                {metrics["model"]["macro_f1"]:.2f} macro F1 &bull;
+                vs {metrics["baseline_most_frequent"]["accuracy"]:.0%} most-frequent baseline
             </p>
         </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("**Latency Distribution**")
-        
-        latencies = generate_latency_data()
-        
-        fig = go.Figure()
-        fig.add_trace(go.Histogram(
-            x=latencies, nbinsx=45,
-            marker_color='#14b8a6',
-            opacity=0.85
-        ))
-        fig.add_vline(x=12, line_dash="dot", line_color="#ef4444", line_width=1.5,
-                      annotation_text="p99: 12ms", annotation_font_size=10)
-        fig.add_vline(x=np.median(latencies), line_dash="dot", line_color="#10b981", line_width=1.5,
-                      annotation_text=f"p50: {np.median(latencies):.1f}ms", annotation_font_size=10)
-        fig.update_layout(
-            height=280, showlegend=False,
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family='Inter', color='#a1a1aa', size=11),
-            xaxis_title="Latency (ms)", yaxis_title="Requests"
+        """,
+            unsafe_allow_html=True,
         )
-        fig.update_xaxes(gridcolor='rgba(39, 39, 42, 0.5)')
-        fig.update_yaxes(gridcolor='rgba(39, 39, 42, 0.5)')
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    # Throughput metrics
+
+    with col2:
+        st.markdown("**Routing Latency (measured on this instance)**")
+        fig = go.Figure()
+        fig.add_trace(
+            go.Histogram(x=latencies, nbinsx=45, marker_color="#14b8a6", opacity=0.85)
+        )
+        fig.add_vline(
+            x=p99,
+            line_dash="dot",
+            line_color="#ef4444",
+            line_width=1.5,
+            annotation_text=f"p99: {p99:.2f}ms",
+            annotation_font_size=10,
+        )
+        fig.add_vline(
+            x=p50,
+            line_dash="dot",
+            line_color="#10b981",
+            line_width=1.5,
+            annotation_text=f"p50: {p50:.2f}ms",
+            annotation_font_size=10,
+        )
+        fig.update_layout(
+            height=280,
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Inter", color="#a1a1aa", size=11),
+            xaxis_title="Latency (ms)",
+            yaxis_title="Requests",
+        )
+        fig.update_xaxes(gridcolor="rgba(39, 39, 42, 0.5)")
+        fig.update_yaxes(gridcolor="rgba(39, 39, 42, 0.5)")
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
     st.markdown('<div class="section-divider"></div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">', unsafe_allow_html=True)
-    
-    throughput = [
-        ("Avg Throughput", "523 req/sec"),
-        ("Peak Throughput", "847 req/sec"),
-        ("p99 Latency", "12ms")
+    st.markdown(
+        '<div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr);">',
+        unsafe_allow_html=True,
+    )
+
+    measured = [
+        ("p50 Latency", f"{p50:.2f} ms"),
+        ("p99 Latency", f"{p99:.2f} ms"),
+        ("Throughput (1 core)", f"{1000.0 / p50:,.0f} req/sec"),
     ]
-    
-    for label, value in throughput:
-        st.markdown(f"""
+    for label, value in measured:
+        st.markdown(
+            f"""
         <div class="metric-card">
             <div class="metric-label">{label}</div>
             <div class="metric-value">{value}</div>
         </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 def render_footer():
-    st.markdown("""
+    st.markdown(
+        """
     <div class="app-footer">
         <div class="footer-left">
             Built by <a href="https://christiangcallahan.tech" style="color: var(--color-accent-secondary); text-decoration: none;">Christian Callahan</a>
@@ -734,16 +844,21 @@ def render_footer():
             <a href="mailto:contact@christiangcallahan.tech">Contact</a>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 def main():
     render_header()
     render_tabs()
     render_footer()
+
 
 if __name__ == "__main__":
     main()

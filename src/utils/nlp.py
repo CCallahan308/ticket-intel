@@ -15,11 +15,15 @@ work seem feel try leave call keep let begin show hear play run move like live
 
 
 def _init_nlp():
+    """Return the nltk module if available, else None (callers fall back to regex)."""
     global _nlp_data
     if _nlp_data is not None:
         return _nlp_data
 
-    import nltk
+    try:
+        import nltk
+    except ImportError:
+        return None
 
     try:
         nltk.data.find("tokenizers/punkt")
@@ -33,16 +37,22 @@ def _init_nlp():
 
 def split_sentences(txt: str) -> list[str]:
     nltk = _init_nlp()
-    try:
-        return nltk.sent_tokenize(txt)
-    except Exception:
-        return [s.strip() for s in re.split(r"[.!?]+", txt) if s.strip()]
+    if nltk is not None:
+        try:
+            return nltk.sent_tokenize(txt)
+        except Exception:
+            pass
+    return [s.strip() for s in re.split(r"[.!?]+", txt) if s.strip()]
 
 
 def tokenize(txt: str) -> list[str]:
     nltk = _init_nlp()
-    try:
-        toks = nltk.word_tokenize(txt.lower())
-    except Exception:
+    toks = None
+    if nltk is not None:
+        try:
+            toks = nltk.word_tokenize(txt.lower())
+        except Exception:
+            toks = None
+    if toks is None:
         toks = txt.lower().split()
     return [t for t in toks if t.isalpha() and t not in _STOP and len(t) > 2]
