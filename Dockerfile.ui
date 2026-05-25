@@ -4,12 +4,12 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m nltk.downloader punkt
 
 COPY src /app/src
-COPY models /app/models
 COPY main.py /app/main.py
-COPY tickets.csv /app/tickets.csv
+
+# Train the router at build time so the dashboard loads instantly.
+RUN python -m src.models.train_router
 
 EXPOSE 8501
 
