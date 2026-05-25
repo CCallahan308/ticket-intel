@@ -28,6 +28,10 @@ env/
 *.swp
 *.swo
 
+# local AI/editor tooling config (kept local, not published)
+.claude/
+CLAUDE.md
+
 # os
 .DS_Store
 Thumbs.db

@@ -8,23 +8,27 @@ Ticket Intel is engineered to be modular, extensible, and scalable. This section
 
 The core value of Ticket Intel lies in its three primary ML models, wrapped by a fast API and a solid frontend.
 
+The Streamlit UI and the FastAPI service are **parallel consumers** of the same
+core functions in `src/models/` — the UI calls them directly (in-process), it
+does not go through the API.
+
 ```mermaid
 graph TD
-    User([User / Support Agent]) --> UI[Streamlit Dashboard]
-    UI --> API[FastAPI Gateway]
-    
-    subgraph NLP Engine
-        API --> Router[Ticket Router]
-        API --> Summarizer[Extractive Summarizer]
-        API --> Insights[Insight Extractor]
+    User([User / Support Agent]) --> UI[Streamlit UI]
+    Client([HTTP Client]) --> API[FastAPI Service]
+
+    subgraph Core["src/models (shared core)"]
+        Router[Ticket Router<br/>TF-IDF + Naive Bayes]
+        Summarizer[Extractive Summarizer]
+        Insights[Insight Extractor]
     end
-    
-    Router --> |Category| Output[(Result JSON)]
-    Summarizer --> |Summary| Output
-    Insights --> |Entities/Sentiment| Output
-    
-    Output --> API
-    API --> UI
+
+    UI --> Router
+    UI --> Summarizer
+    UI --> Insights
+    API --> Router
+    API --> Summarizer
+    API --> Insights
 ```
 
 ---

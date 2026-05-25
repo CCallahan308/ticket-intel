@@ -2,14 +2,20 @@
 Ticket Intel - NLP feedback system for support tickets
 Routes, summarizes, extracts insights.
 """
+
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app):
     from src.api.routes import init_models
+
     init_models()
     yield
 
@@ -30,7 +36,9 @@ def create_app():
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:8501").split(","),
+        allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:8501").split(
+            ","
+        ),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -46,13 +54,10 @@ def run_api():
     import uvicorn
 
     app = create_app()
-    print("\n" + "=" * 50)
-    print("Ticket Intel API")
-    print("=" * 50)
-    print("API:     http://localhost:8000")
-    print("Docs:    http://localhost:8000/docs")
-    print("Health:  http://localhost:8000/health")
-    print("=" * 50 + "\n")
+    logger.info("Ticket Intel API starting")
+    logger.info("API:    http://localhost:8000")
+    logger.info("Docs:   http://localhost:8000/docs")
+    logger.info("Health: http://localhost:8000/health")
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
@@ -67,7 +72,9 @@ def run_dashboard():
     env = os.environ.copy()
     env["PYTHONPATH"] = str(pkg_dir)
 
-    subprocess.run([sys.executable, "-m", "streamlit", "run", str(dashboard_path)], env=env)
+    subprocess.run(
+        [sys.executable, "-m", "streamlit", "run", str(dashboard_path)], env=env
+    )
 
 
 def main():
@@ -79,19 +86,21 @@ def main():
 
     cmd = args[0]
 
+    # Hand any remaining args to the sub-command's own argparse (e.g.
+    # `main.py train --input tickets.csv`) by dropping the sub-command token.
+    sys.argv = [sys.argv[0], *args[1:]]
+
     if cmd == "train":
-        print("Training router model...")
+        logger.info("Training router model...")
         from src.models.train_router import main as train_main
 
         train_main()
-        print("Done!")
+        logger.info("Done.")
 
-    elif cmd == "train_bert":
-        print("Training BERT router model...")
-        from src.models.train_bert_router import train_bert_router
+    elif cmd == "evaluate":
+        from src.models.evaluate import main as eval_main
 
-        train_bert_router()
-        print("Done!")
+        eval_main()
 
     elif cmd == "api":
         run_api()
@@ -99,7 +108,7 @@ def main():
     elif cmd == "ui":
         run_dashboard()
 
-    elif cmd == "--help" or cmd == "-h":
+    elif cmd in ("--help", "-h"):
         print(
             """
 Ticket Intel - NLP feedback system
@@ -107,10 +116,14 @@ Ticket Intel - NLP feedback system
 Commands:
   api           Start FastAPI server (default)
   ui            Start Streamlit dashboard
-  train         Train the local TF-IDF routing model
-  train_bert    Fine-tune the DistilBERT routing model
+  train         Train the TF-IDF + Naive Bayes routing model
+  evaluate      Cross-validate the router and write metrics.json
         """
         )
+
+    else:
+        logger.error("Unknown command: %s (try --help)", cmd)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
