@@ -5,14 +5,13 @@ NOTE: There's also a simpler run_dashboard() in main.py. This file is the
 fancy version with custom CSS/components. Keeping both around since the
 simple one is easier to debug when something breaks here.
 """
-from collections import Counter
+
 
 import streamlit as st
 import pandas as pd
 
 from src.ui.styles import CSS, COLORS, header, metric_card, status_badge
-from src.ui.styles import sentiment_badge, tag, entity_pill, quote_box
-from src.ui.styles import section_header, info_box, LOGO_SVG
+from src.ui.styles import section_header
 from src.ui.charts import (
     category_bar_chart,
     confidence_histogram,
@@ -20,10 +19,8 @@ from src.ui.charts import (
     keyword_barchart,
 )
 from src.ui.charts import (
-    confidence_gauge,
     category_scatter,
     sentiment_by_category,
-    probability_bar,
 )
 from src.ui.charts import entity_count_histogram
 from src.models.router import load_router, route
@@ -129,7 +126,7 @@ with main_col:
 
             if not subj_col or not body_col:
                 st.markdown(
-                    f"""
+                    """
                 <div class="info-box red">
                     <strong>Column Detection Failed</strong><br>
                     Could not find subject/body columns. Expected: Subject, Body, Ticket Subject, Ticket Description

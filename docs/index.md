@@ -18,9 +18,11 @@ Customer support teams deal with massive amounts of unstructured text. Ticket In
 
 ---
 
-## 🏗️ Quick Look at the UI
+## 🏗️ Try It
 
-(We will add a beautiful screenshot here shortly)
+An interactive Streamlit demo (running on synthetic data) is available here:
+**[ticket-intel-ccallahan308.streamlit.app](https://ticket-intel-ccallahan308.streamlit.app/)**.
+To run everything locally, see [Getting Started](setup.md).
 
 ---
 

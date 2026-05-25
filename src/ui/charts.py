@@ -1,4 +1,5 @@
 """Plotly chart builders for Ticket Intel dashboard"""
+
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -94,7 +95,7 @@ def sentiment_donut(data: pd.Series) -> go.Figure:
 
     labels = data.index.tolist()
     values = data.values.tolist()
-    colors = [SENTIMENT_COLORS.get(l, COLORS["neutral"]) for l in labels]
+    colors = [SENTIMENT_COLORS.get(label, COLORS["neutral"]) for label in labels]
 
     fig.add_trace(
         go.Pie(
